@@ -37,6 +37,7 @@ def login():
         return id_u
     else:
         print("Usuario não encontrado")
+        return True
     # verificar se senha=senha
 def cadastro():
     while True:
@@ -71,18 +72,47 @@ def menu(id_user):
     if escolha.startswith("V"):
         print("legal")
     elif escolha.startswith("A"):
-        add_user = input("qual o ID ou nome do usuario que quer se conectar ")
+        add_user = input("qual o nome do usuario que quer se conectar ")
         cursor.execute("SELECT id OR nome FROM usuarios WHERE nome = ? OR id = ?",(add_user,add_user))
         achar = cursor.fetchone()
         if achar:
             if not os.path.exists(id_user + "/" + add_user + ".txt"):
                 open("chat/"+id_user + "/" + add_user + ".txt", "a").close()
+            if not os.path.exists(add_user + "/" + id_user + ".txt"):
+                open("chat/"+add_user + "/" + id_user + ".txt", "a").close()
+                #alterar depois para criar uma pasta sempre com o nome dos dois usuarios
         else:
             print("usuario não existe")
-        print(achar)
     else:
         return False
+
+def conversa():
+    caminho = os.path.join("chat",id_user)
+    caminho2 = sorted(f for f in os.listdir(caminho))
+    os.system("cls")
+    escolha = questionary.select("Conversas",
+        choices=caminho2
+        
+    ).ask()
+    path = os.path.join(caminho, escolha)
+    with open(path,"r+") as arquivo:
+        chat = arquivo.read()
+    print(chat)
+    escolha = questionary.select("",
+        choices=[
+        "escrever",
+        "sair"]
+    ).ask()
+    if escolha.startswith("e"):
+        with open(path, "w") as arquivo:
+            msg = ("0"+input(""))
+            arquivo.write(msg)
+    
 id_user = login()
-id_user = str(id_user[0])
-if id_user:
-    menu(id_user)
+if not id_user == True:
+    id_user = str(id_user[0])
+    #if id_user:
+    #    menu(id_user)
+    conversa()
+
+        

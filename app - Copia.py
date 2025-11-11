@@ -83,7 +83,7 @@ def menu_de_conversa(id_user):
             if achar:
                 if not os.path.exists(id_user + "/"+ achar + ".txt"):
                     open("chat/"+id_user + "/" + achar + ".txt", "a").close()
-                elif not os.path.exists(add_user + "/" + id_user + ".txt"):
+                if not os.path.exists(add_user + "/" + id_user + ".txt"):
                     open("chat/"+add_user + "/" + nome + ".txt", "a").close()
                     #alterar depois para criar uma pasta sempre com o nome dos dois usuarios
                 else:
@@ -110,22 +110,28 @@ def conversa(id_user):
     print(id_amigo)
     path2 = os.path.join("chat",id_amigo,nome+".txt")
 
-    shutil.copyfile(path,path2) #copia o chat da pessoa 1 para a pessoa 2
+     
 
-    with open(path,"r+") as arquivo:
-        chat = arquivo.read()
-    print(chat)
-    escolha = questionary.select("",
-        choices=[
-        "escrever",
-        "sair"
-        ]
-    ).ask()
-    if escolha.startswith("e"):
-        with open(path, "a") as arquivo:
-            msg = (f"{nome}>"+input(""))
-            arquivo.write(msg +"\n")
     
+    while True:
+        escolha = questionary.select("",
+            choices=[
+            chate(path,path2)
+            ]
+        ).ask()
+        if escolha.startswith(None):
+            break
+
+def chate(path,path2):
+    while True:
+        with open(path, "r") as arquivo:
+                chat = arquivo.read()
+        print(chat)
+        with open(path, "a") as arquivo:
+                msg = (f"{nome}>"+input(""))
+                arquivo.write(msg +"\n")
+        shutil.copyfile(path,path2)#copia o chat da pessoa 1 para a pessoa 2
+        os.system("cls")
 def menu():
     while True:
         print("CENTRAL DE CONVERSAS FINI")

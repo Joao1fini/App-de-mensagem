@@ -2,30 +2,25 @@ import os
 import sqlite3
 import questionary
 import shutil
-
+import threading
+import time
+import random
 user = sqlite3.connect("usuarios.db")
 os.makedirs("chat", exist_ok=True)   
 
 #variaveis (ficou muito complicado)
 nome = ""
 id_user=""
+achar=""
 
 cursor = user.cursor()
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS usuarios(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY,
     nome TEXT NOT NULL,
     senha BCRYPT NOT NULL
 ) """)
 
-cursor.execute("""CREATE UNIQUE INDEX IF NOT EXISTS id_user ON usuarios(nome)""")
-user.commit()
-
-cursor.execute("SELECT id FROM usuarios")
-lista = cursor.fetchall()
-for i in range(1,(len(lista)+1)):
-    e = str(i)
-    os.makedirs("chat/"+e,exist_ok=True)
 
 def login():
     global nome
@@ -38,7 +33,9 @@ def login():
         print(f"Bem vindo de volta {nome}")
         cursor.execute("SELECT id FROM usuarios WHERE nome = ?",(nome,))
         id_u = cursor.fetchone()
-        return id_u
+        id_user = str(id_u).strip("(),")
+        print(id_user)
+        return id_user
     else:
         print("Usuario não encontrado")
         return True
@@ -50,19 +47,22 @@ def cadastro():
             print("Tela de cadastro")
             nome = input("Digite o nome que seja utilizado: ")
             senha = input("Dinite sua senha: ")
+            id = random.randint(1000,4000)
+            print(id)
             cursor.execute("""
-            INSERT INTO usuarios (nome, senha)
-            VALUES(?,?)""",(nome, senha))
+            INSERT INTO usuarios (id, nome, senha)
+            VALUES(?,?,?)""",(id, nome, senha))
             user.commit()
             print("Cadastro efetuado")
-            (cursor.execute("SELECT id FROM usuarios WHERE nome = ?", (nome,)))
-            id_user = cursor.fetchone()
+            id_user =str(id)
+            os.makedirs("chat/"+id_user,exist_ok=True)
 
             return id_user
         except sqlite3.IntegrityError:
             return False
 
 def menu_de_conversa(id_user):
+    global achar
     while True:
         escolha = questionary.select("",    
                 choices=[
@@ -78,8 +78,8 @@ def menu_de_conversa(id_user):
             achar = cursor.fetchone()
             achar = str(achar).strip("'()',")
             cursor.execute("SELECT id FROM usuarios WHERE nome = ? OR id = ?",(add_user,add_user))
-            add_user = cursor.fetchone()
-            add_user = str(add_user[0])
+            add_amigo = cursor.fetchone()
+            add_user = str(add_amigo[0])
             if achar:
                 if not os.path.exists(id_user + "/"+ achar + ".txt"):
                     open("chat/"+id_user + "/" + achar + ".txt", "a").close()
@@ -121,20 +121,42 @@ def conversa(id_user):
         ).ask()
         if escolha.startswith(None):
             break
-
-def chate(path,path2):
+def mostrar(path,path2):
+    pos = 0
     while True:
-        with open(path, "r") as arquivo:
-                chat = arquivo.read()
-        print(chat)
+        size = os.path.getsize(path)
+        if size>pos:
+            with open(path, "r") as arquivo:
+                    arquivo.seek(pos)
+                    chat = arquivo.read()
+                    pos = arquivo.tell()
+
+                    achar = os.path.splitext(os.path.basename(path))[0]
+
+                    
+                    if f"{nome}>" in chat:
+                        chat = chat.replace(f"{nome}>", f"\033[34m{nome}>\033[0m")  # azul
+                    if f"{achar}>" in chat:
+                        chat = chat.replace(f"{achar}>", f"\033[31m{achar}>\033[0m")  # azul
+                    print(chat, end="",flush=True)
+        
+def chate(path,path2):
+    t = threading.Thread(target=mostrar, args=(path,path2,),daemon=True)
+    t.start()
+    while True:
         with open(path, "a") as arquivo:
-                msg = (f"{nome}>"+input(""))
-                arquivo.write(msg +"\n")
-                with open(path2, "a") as arquivo2:
-                    arquivo = str(arquivo)
-                    arquivo2 = str(arquivo2)
+            msg = (f"{nome}>"+input(""))
+            print("\033[F\033[K", end="")
+            if msg == None:
+                break
+            arquivo.write(msg +"\n")
+        time.sleep(0.2)
         shutil.copyfile(path,path2)#copia o chat da pessoa 1 para a pessoa 2
-        os.system("cls")
+            
+
+                
+                
+
 def menu():
     while True:
         print("CENTRAL DE CONVERSAS FINI")

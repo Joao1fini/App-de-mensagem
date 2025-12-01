@@ -5,7 +5,6 @@ import shutil
 import threading
 import time
 import random
-import msvcrt
 
 user = sqlite3.connect("usuarios.db")
 os.makedirs("chat", exist_ok=True)   
@@ -23,8 +22,6 @@ CREATE TABLE IF NOT EXISTS usuarios(
     nome TEXT NOT NULL,
     senha BCRYPT NOT NULL
 ) """)
-
-
 def login():
     global nome
     nome = input("Digite seu nome de usuario: ").lower()
@@ -33,11 +30,11 @@ def login():
     SELECT * FROM usuarios WHERE nome = ? AND senha = ?""",(nome,senha))  
     result = logon.fetchone()
     if result:
+        os.system("cls")
         print(f"Bem vindo de volta {nome}")
         cursor.execute("SELECT id FROM usuarios WHERE nome = ?",(nome,))
         id_u = cursor.fetchone()
         id_user = str(id_u).strip("(),")
-        print(id_user)
         return id_user
     else:
         print("Usuario não encontrado")
@@ -69,11 +66,10 @@ def cadastro():
             return id_user
         except sqlite3.IntegrityError:
             return False
-
 def menu_de_conversa(id_user):
     global achar
     while True:
-        escolha = questionary.select("",    
+        escolha = questionary.select(" ",    
                 choices=[
                     "Ver conversas",
                     "Adicionar conversas",
@@ -88,12 +84,12 @@ def menu_de_conversa(id_user):
             achar = str(achar).strip("'()',")
             cursor.execute("SELECT id FROM usuarios WHERE nome = ?",(add_user,))
             add_amigo = cursor.fetchone()
-            add_user = str(add_amigo[0])
             if achar:
+                add_user = str(add_amigo[0])
                 if not os.path.exists(id_user + "/"+ achar + ".txt"):
                     open("chat/"+id_user + "/" + achar + ".txt", "a").close()
-                if not os.path.exists(add_user + "/" + id_user + ".txt"):
-                    open("chat/"+add_user + "/" + nome + ".txt", "a").close()
+                    if not os.path.exists(add_user + "/" + id_user + ".txt"):
+                        open("chat/"+add_user + "/" + nome + ".txt", "a").close()
                     #alterar depois para criar uma pasta sempre com o nome dos dois usuarios
                 else:
                     print("Usuario ja adicionado")
@@ -113,26 +109,18 @@ def conversa(id_user):
             choices=caminho2
         ).ask()
         path = os.path.join(caminho, escolha)
-        seila = escolha[:-4]
-        cursor.execute ("SELECT id FROM usuarios WHERE nome = ?", (seila,))
+        id = escolha[:-4]
+        cursor.execute ("SELECT id FROM usuarios WHERE nome = ?", (id,))
         id_amigo = cursor.fetchone()
         id_amigo = str(id_amigo[0])
         print(id_amigo)
         path2 = os.path.join("chat",id_amigo,nome+".txt")
-    except FileNotFoundError:
+    except (FileNotFoundError,ValueError):
         print("Você ainda não iniciou nenhuma conversa")
         time.sleep(1)
         return
-     
-
-    
     while True:
-        escolha = questionary.select("",
-            choices=[
             chate(path,path2)
-            ]
-        ).ask()
-        if escolha.startswith(None):
             break
 def mostrar(path,path2):
     pos = 0
@@ -165,15 +153,10 @@ def chate(path,path2):
             arquivo.write(msg +"\n")
         time.sleep(0.2)
         shutil.copyfile(path,path2)#copia o chat da pessoa 1 para a pessoa 2
-            
-
-                
-                
-
 def menu():
     while True:
-        print("CENTRAL DE CONVERSAS FINI")
-        escolha = questionary.select("",
+        escolha = questionary.select(
+            "CENTRAL DE CONVERSAS FINI",
             choices=[
                 "Login",
                 "Cadastro",
@@ -206,7 +189,6 @@ def menu():
             continue
 #Estrutura de funcionamento 
 #⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇
-
 os.system("cls")
 menu()
     

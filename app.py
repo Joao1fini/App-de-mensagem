@@ -5,7 +5,7 @@ import shutil
 import threading
 import time
 import random
-
+import datetime
 user = sqlite3.connect("usuarios.db")
 os.makedirs("chat", exist_ok=True)   
 
@@ -99,9 +99,10 @@ def menu_de_conversa(id_user):
                 add_amigo = cursor.fetchone()
                 add_user = str(add_amigo[0])
                 if not os.path.exists(id_user + "/"+ achar + ".txt"):
-                    open("chat/"+id_user + "/" + achar + ".txt", "a").close()
-                    if not os.path.exists(add_user + "/" + id_user + ".txt"):
-                        open("chat/"+add_user + "/" + nome + ".txt", "a").close()
+                    if add_user != nome:
+                        open("chat/"+id_user + "/" + achar + ".txt", "a").close()
+                        if not os.path.exists(add_user + "/" + id_user + ".txt"):
+                            open("chat/"+add_user + "/" + nome + ".txt", "a").close()
                     #alterar depois para criar uma pasta sempre com o nome dos dois usuarios
                 else:
                     print("Usuario ja adicionado")
@@ -114,7 +115,6 @@ def conversa(id_user):
         caminho = os.path.join("chat",id_user)
         caminho2 = sorted(f for f in os.listdir(caminho))
         os.system("cls")
-        sair="\033[31m/sair\033[0m"
         caminho2.append("sair")
         escolha = questionary.select("Conversas",
             choices=caminho2
@@ -153,18 +153,23 @@ def mostrar(path,path2):
                         chat = chat.replace(f"{achar}>", f"\033[31m{achar}>\033[0m")  # azul
                     print(chat, end="",flush=True)
 def chate(path,path2):
+    tempo = datetime.datetime.now()
+    datahora = tempo.strftime("%H:%M")
     t = threading.Thread(target=mostrar, args=(path,path2,),daemon=True)
     t.start()
     while True:
         with open(path, "a") as arquivo:
             msg = (f"{nome}>"+input("\033[33m/v\033[0m"+" "*2))
+            tam = 150 - len(msg)
+            msg += (" "*tam)+datahora
             if  "/v".strip() in msg:
                 os.system("cls")
                 break
             print("\033[F\033[K", end="")
             arquivo.write(msg +"\n")
         time.sleep(0.2)
-        shutil.copyfile(path,path2)#copia o chat da pessoa 1 para a pessoa 2
+        if path != path2:
+            shutil.copyfile(path,path2)#copia o chat da pessoa 1 para a pessoa 2
 def menu():
     while True:
         escolha = questionary.select(

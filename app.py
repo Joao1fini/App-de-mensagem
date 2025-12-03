@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS usuarios(
     senha BCRYPT NOT NULL
 ) """)
 def login():
-    global nome
+    global nome, id_user
     nome = input("Digite seu nome de usuario: ").lower()
     senha = input("Digite sua senha: ")
     logon = cursor.execute("""
@@ -41,6 +41,7 @@ def login():
         return True
     # verificar se senha=senha
 def cadastro():
+    global nome, id_user
     while True:
         try:
             os.system("cls")
@@ -61,15 +62,26 @@ def cadastro():
                 time.sleep(1)
                 os.system("cls")
             else:
-                print("Usuario ja existe")
-                return False
+                escolha = questionary.select("ja existe um usuario com esse nome, deseja fazer login ou entar novamente",
+                        choices=[
+                            "Ir para login",
+                            "Tentar novamente"
+                        ]).ask()
+                if escolha.startswith("I"):
+                    id_user = login()
+                    if id_user == True:
+                        return True
+                    else:
+                        continue
+                else:
+                    continue
             return id_user
         except sqlite3.IntegrityError:
             return False
 def menu_de_conversa(id_user):
     global achar
     while True:
-        escolha = questionary.select(" ",    
+        escolha = questionary.select("",
                 choices=[
                     "Ver conversas",
                     "Adicionar conversas",
@@ -80,11 +92,11 @@ def menu_de_conversa(id_user):
         elif escolha.startswith("A"):
             add_user = input("qual o nome ou id do usuario que quer se conectar ")
             cursor.execute("SELECT nome FROM usuarios WHERE nome = ?",(add_user,))
-            achar = cursor.fetchone()
-            achar = str(achar).strip("'()',")
-            cursor.execute("SELECT id FROM usuarios WHERE nome = ?",(add_user,))
-            add_amigo = cursor.fetchone()
-            if achar:
+            try:
+                achar = cursor.fetchone()
+                achar = str(achar).strip("'()',")
+                cursor.execute("SELECT id FROM usuarios WHERE nome = ?",(add_user,))
+                add_amigo = cursor.fetchone()
                 add_user = str(add_amigo[0])
                 if not os.path.exists(id_user + "/"+ achar + ".txt"):
                     open("chat/"+id_user + "/" + achar + ".txt", "a").close()
@@ -93,32 +105,35 @@ def menu_de_conversa(id_user):
                     #alterar depois para criar uma pasta sempre com o nome dos dois usuarios
                 else:
                     print("Usuario ja adicionado")
-            else:
-                print("usuario não existe")
-        
-            
+            except:
+                print(f"usuario \033[31m{add_user}\033[0m não existe")
         else:
             return False
-
 def conversa(id_user):
     try:
         caminho = os.path.join("chat",id_user)
         caminho2 = sorted(f for f in os.listdir(caminho))
         os.system("cls")
+        sair="\033[31m/sair\033[0m"
+        caminho2.append("sair")
         escolha = questionary.select("Conversas",
             choices=caminho2
         ).ask()
+        if escolha.startswith("sair"):
+            return
         path = os.path.join(caminho, escolha)
         id = escolha[:-4]
         cursor.execute ("SELECT id FROM usuarios WHERE nome = ?", (id,))
         id_amigo = cursor.fetchone()
         id_amigo = str(id_amigo[0])
-        print(id_amigo)
         path2 = os.path.join("chat",id_amigo,nome+".txt")
     except (FileNotFoundError,ValueError):
         print("Você ainda não iniciou nenhuma conversa")
         time.sleep(1)
         return
+    print("/v para Voltar")
+    time.sleep(0.5)
+    os.system("cls")
     while True:
             chate(path,path2)
             break
@@ -131,25 +146,22 @@ def mostrar(path,path2):
                     arquivo.seek(pos)
                     chat = arquivo.read()
                     pos = arquivo.tell()
-
                     achar = os.path.splitext(os.path.basename(path))[0]
-                    
                     if f"{nome}>" in chat:
                         chat = chat.replace(f"{nome}>", f"\033[34m{nome}>\033[0m")  # azul
                     if f"{achar}>" in chat:
                         chat = chat.replace(f"{achar}>", f"\033[31m{achar}>\033[0m")  # azul
                     print(chat, end="",flush=True)
-        if tecla == "esc":
-            return
 def chate(path,path2):
     t = threading.Thread(target=mostrar, args=(path,path2,),daemon=True)
     t.start()
     while True:
         with open(path, "a") as arquivo:
-            msg = (f"{nome}>"+input(""))
-            print("\033[F\033[K", end="")
-            if msg == None:
+            msg = (f"{nome}>"+input("\033[33m/v\033[0m"+" "*2))
+            if  "/v".strip() in msg:
+                os.system("cls")
                 break
+            print("\033[F\033[K", end="")
             arquivo.write(msg +"\n")
         time.sleep(0.2)
         shutil.copyfile(path,path2)#copia o chat da pessoa 1 para a pessoa 2
@@ -166,29 +178,15 @@ def menu():
         if escolha.startswith("L"):
             id_user = login()
         elif escolha.startswith("C"):
-            if cadastro():
-                escolha == "L"
-                continue
-            else:
-                escolha = questionary.select("a existe um usuario com esse nome, deseja fazer login ou entar novamente",
-                        choices=[
-                            "Ir para login",
-                            "Tentar novamente"
-                        ]).ask()
-                if escolha.startswith("I"):
-                    login()
-                else:
-                    continue
-        else:
+            id_user = cadastro()
+        elif escolha.startswith("S"):
             break
         if not id_user == True:
             id_user = str(id_user)
             if id_user:
                 menu_de_conversa(id_user)
-        else:
-            continue
+        
 #Estrutura de funcionamento 
 #⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇
 os.system("cls")
 menu()
-    
